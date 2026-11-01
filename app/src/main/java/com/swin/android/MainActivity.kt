@@ -1,48 +1,77 @@
 package com.swin.android
 
 import android.app.Activity
+import android.app.AlertDialog
+import android.media.projection.MediaProjectionManager
 import android.os.Bundle
-import android.graphics.Color
-import android.view.Gravity
-import android.view.View
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AppCompatActivity
 
-class MainActivity : Activity() {
+class MainActivity : AppCompatActivity() {
+
+    private lateinit var status: TextView
+    private lateinit var startButton: Button
+
+    private var permissionGranted = false
+
+    private val screenPermission =
+        registerForActivityResult(
+            ActivityResultContracts.StartActivityForResult()
+        ) { result ->
+
+            if (result.resultCode == Activity.RESULT_OK) {
+                permissionGranted = true
+                status.text =
+                    "Разрешение получено. Демонстрация пока не запущена."
+                startButton.text = "STOP"
+            } else {
+                permissionGranted = false
+                status.text = "Разрешение не предоставлено."
+            }
+        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         val layout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER
-            setPadding(32, 32, 32, 32)
-            setBackgroundColor(Color.rgb(15, 18, 28))
+            setPadding(40, 60, 40, 40)
         }
 
         val title = TextView(this).apply {
             text = "SWIN ANDROID"
             textSize = 28f
-            setTextColor(Color.WHITE)
-            gravity = Gravity.CENTER
         }
 
-        val status = TextView(this).apply {
-            text = "Отключено"
-            textSize = 16f
-            setTextColor(Color.LTGRAY)
-            gravity = Gravity.CENTER
+        status = TextView(this).apply {
+            text = "Устройство готово"
+            textSize = 18f
+            setPadding(0, 30, 0, 30)
         }
 
-        val start = Button(this).apply {
+        startButton = Button(this).apply {
             text = "START"
             setOnClickListener {
-                status.text = "Ожидание разрешения пользователя"
+                if (!permissionGranted) {
+                    val manager =
+                        getSystemService(MEDIA_PROJECTION_SERVICE)
+                            as MediaProjectionManager
+
+                    screenPermission.launch(
+                        manager.createScreenCaptureIntent()
+                    )
+                } else {
+                    permissionGranted = false
+                    status.text = "Сеанс остановлен."
+                    startButton.text = "START"
+                }
             }
         }
 
-        val settings = Button(this).apply {
+        val settingsButton = Button(this).apply {
             text = "SETTINGS"
             setOnClickListener {
                 status.text = "Настройки приложения"
@@ -51,8 +80,8 @@ class MainActivity : Activity() {
 
         layout.addView(title)
         layout.addView(status)
-        layout.addView(start)
-        layout.addView(settings)
+        layout.addView(startButton)
+        layout.addView(settingsButton)
 
         setContentView(layout)
     }
