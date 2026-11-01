@@ -1,37 +1,22 @@
 package com.swin.android
 
 import android.app.Activity
-import android.app.AlertDialog
-import android.media.projection.MediaProjectionManager
 import android.os.Bundle
+import android.content.Context
+import android.content.Intent
+import android.media.projection.MediaProjectionManager
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AppCompatActivity
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : Activity() {
 
     private lateinit var status: TextView
-    private lateinit var startButton: Button
-
     private var permissionGranted = false
 
-    private val screenPermission =
-        registerForActivityResult(
-            ActivityResultContracts.StartActivityForResult()
-        ) { result ->
-
-            if (result.resultCode == Activity.RESULT_OK) {
-                permissionGranted = true
-                status.text =
-                    "Разрешение получено. Демонстрация пока не запущена."
-                startButton.text = "STOP"
-            } else {
-                permissionGranted = false
-                status.text = "Разрешение не предоставлено."
-            }
-        }
+    companion object {
+        private const val REQUEST_CODE = 1001
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -52,22 +37,17 @@ class MainActivity : AppCompatActivity() {
             setPadding(0, 30, 0, 30)
         }
 
-        startButton = Button(this).apply {
+        val startButton = Button(this).apply {
             text = "START"
             setOnClickListener {
-                if (!permissionGranted) {
-                    val manager =
-                        getSystemService(MEDIA_PROJECTION_SERVICE)
-                            as MediaProjectionManager
+                val manager = getSystemService(
+                    Context.MEDIA_PROJECTION_SERVICE
+                ) as MediaProjectionManager
 
-                    screenPermission.launch(
-                        manager.createScreenCaptureIntent()
-                    )
-                } else {
-                    permissionGranted = false
-                    status.text = "Сеанс остановлен."
-                    startButton.text = "START"
-                }
+                startActivityForResult(
+                    manager.createScreenCaptureIntent(),
+                    REQUEST_CODE
+                )
             }
         }
 
@@ -84,5 +64,24 @@ class MainActivity : AppCompatActivity() {
         layout.addView(settingsButton)
 
         setContentView(layout)
+    }
+
+    @Deprecated("Deprecated in Android")
+    override fun onActivityResult(
+        requestCode: Int,
+        resultCode: Int,
+        data: Intent?
+    ) {
+        super.onActivityResult(requestCode, resultCode, data)
+
+        if (requestCode == REQUEST_CODE) {
+            permissionGranted = resultCode == RESULT_OK
+
+            status.text = if (permissionGranted) {
+                "Разрешение получено"
+            } else {
+                "Разрешение отклонено"
+            }
+        }
     }
 }
