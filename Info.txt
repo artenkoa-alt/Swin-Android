@@ -1,0 +1,5 @@
+Swin-Android
+Android 16
+Remote support application
+Authorized screen sharing
+Secure connection
